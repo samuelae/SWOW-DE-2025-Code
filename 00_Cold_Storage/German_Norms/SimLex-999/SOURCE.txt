@@ -1,0 +1,5 @@
+Paper: https://arxiv.org/abs/1508.00106
+
+Data: https://github.com/iraleviant/eval-multilingual-simlex/blob/master/evaluation/simlex-german.txt
+
+put file simlex-german.txt into this directory

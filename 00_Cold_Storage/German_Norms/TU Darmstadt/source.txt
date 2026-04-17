@@ -1,0 +1,12 @@
+DATA
+https://tudatalib.ulb.tu-darmstadt.de/items/ffbaf55a-7bd4-48e7-90f4-51dd48f6818e
+
+PAPER
+https://link.springer.com/chapter/10.1007/11562214_67
+
+put files
+
+wordpaare222.gold.pos.txt
+wortpaare350.gold.pos.txt
+
+into this directory

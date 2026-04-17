@@ -1,0 +1,4 @@
+Responses zum Cue '{d$cue}' von dieser Person sind: 1. '{d$resp_1}', 2. '{d$resp_2}', 3. '{d$resp_3}'.
+Die Person hat statt der Maske 'WORD' ursprünglich die Response '{d$incorrect}' hingeschrieben.
+Wie sollte die Response '{d$incorrect}' korrigiert lauten?
+Antworte nur mit der korrigierten Response!

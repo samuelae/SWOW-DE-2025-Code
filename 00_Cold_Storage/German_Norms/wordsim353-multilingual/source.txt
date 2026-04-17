@@ -1,0 +1,5 @@
+
+SOURCE: https://github.com/nmrksic/eval-multilingual-simlex/tree/master/evaluation/ws-353
+PAPAER: https://arxiv.org/pdf/1508.00106v2
+
+put file wordsim353-german.txt into this directory
