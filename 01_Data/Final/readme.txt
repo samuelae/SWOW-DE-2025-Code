@@ -1,1 +1,1 @@
-this is where the SWOW-DE files that can also be obtained from https://smallworldofwords.org/en/project/research are exported to after preprocessing, but SWOW_DE_2025_R55.csv here to replicate analyses
+this is where the SWOW-DE files that can also be obtained from https://smallworldofwords.org/en/project/research are exported to after preprocessing, put SWOW_DE_2025_R55.csv here to replicate analyses
