@@ -2,7 +2,7 @@
 
 This repository includes the code used to preprocess and analyze the SWOW-DE 2025 data in below-mentioned publication.
 
-Aeschbach, S., Mata, R., Lõo, K., De Deyne, S., & Wulff, D. U. (2026). The “Small World of Words” German free-association norms [Manuscript submitted for publication]. University of Basel, Switzerland.
+Aeschbach, S., Mata, R., Lõo, K., De Deyne, S., & Wulff, D. U. (2026). The “Small World of Words” German free-association norms. arXiv.https://doi.org/10.48550/arXiv.2604.19620
 
 ## Data availability
 
