@@ -29,6 +29,9 @@ analyze_network <- function(graph) {
   edge_attr(inv, "weight") <- (max(weigths) + 1) - weigths
   nw_params$aspl <- distances(inv) %>% mean()
   
+  # S (small-world-ness, Humphries & Gurney, 2008)
+  nw_params$S <- small_world_hg(graph, iter = 100, type = "average")$sw_S
+  
   # retrun network parameters
   nw_params
   

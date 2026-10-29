@@ -4,15 +4,9 @@ library(tidyverse)
 library(tidymodels)
 
 source("02_Code/06_Validation/Functions/predict_and_evaluate_embedding.R")
+source("02_Code/06_Validation/Functions/l2_normalize_rows.R")
 
 # Data -------------------------------------------------------------------------
-
-l2_normalize_rows <- function(embedding_df) {
-  dims <- embedding_df %>% select(-word) %>% as.matrix()
-  norms <- sqrt(rowSums(dims^2))
-  dims_normalized <- dims / norms
-  bind_cols(word = embedding_df$word, as_tibble(dims_normalized))
-}
 
 swow_embedding <- readRDS("01_Data/Varia/swow_embedding.rds") %>% l2_normalize_rows()
 fT_embedding <- readRDS("01_Data/Varia/fT_embedding.rds") %>% l2_normalize_rows()

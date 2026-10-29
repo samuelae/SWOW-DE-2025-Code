@@ -1,0 +1,172 @@
+# Dependencies -----------------------------------------------------------------
+
+library(tidyverse)
+library(tidymodels)
+
+source("02_Code/06_Validation/Functions/predict_and_evaluate_embedding.R")
+source("02_Code/06_Validation/Functions/l2_normalize_rows.R")
+
+# Data -------------------------------------------------------------------------
+
+swow_embedding <- readRDS("01_Data/Varia/swow_embedding.rds") %>% l2_normalize_rows()
+fT_embedding <- readRDS("01_Data/Varia/fT_embedding.rds") %>% l2_normalize_rows()
+bge_m3_embedding <- readRDS("01_Data/Varia/bge_m3_embedding.rds") %>% l2_normalize_rows()
+norms <- read_csv("00_Cold_Storage/German_Norms/psycholinguistic_ratings.csv")
+
+# Combine data (swow and fT embeddings, as well as norms)
+data <- swow_embedding %>% 
+  left_join(fT_embedding, by = "word", suffix = c(".swow", ".fT")) %>% 
+  left_join(
+    bge_m3_embedding %>% 
+      rename_with(.fn = \(x) {paste0(x, ".bge")}, .cols = starts_with("dim_")), 
+    by = "word"
+  ) %>% 
+  drop_na() %>% 
+  right_join(norms, by = "word")
+
+# One dependent variable (dv) per data set -------------------------------------
+
+rsq_values <- tibble(word_property = character(length = 0),
+                     data = character(length = 0),
+                     rsq = numeric(length = 0))
+
+set.seed(1984)
+
+for (word_property in names(norms)[-1]) {
+  
+  # select dv and both embeddings
+  dv_data <- data %>% 
+    select(dv = all_of(word_property), starts_with("dim_")) %>% 
+    filter(!is.na(dv))
+  
+  # swow data
+  swow_data <- dv_data %>% 
+    select(dv, ends_with(".swow")) %>% 
+    drop_na()
+  
+  # fT data
+  fT_data <- dv_data %>% 
+    select(dv, ends_with(".fT")) %>% 
+    drop_na()
+  
+  # bge data
+  bge_data <- dv_data %>% 
+    select(dv, ends_with(".bge")) %>% 
+    drop_na()
+  
+  # combined data
+  combined_data_swow_fT <- dv_data %>% 
+    select(dv, ends_with(".swow"), ends_with(".ft")) %>% 
+    drop_na()
+  combined_data_swow_bge <- dv_data %>% 
+    select(dv, ends_with(".swow"), ends_with(".bge")) %>% 
+  drop_na()
+    
+  
+  # run ridge regression tuning and evaluation
+  results_swow_data <- predict_and_evaluate_embedding(swow_data)
+  results_fT_data <- predict_and_evaluate_embedding(fT_data)
+  results_bge_data <- predict_and_evaluate_embedding(bge_data)
+  results_combined_data_swow_fT <- predict_and_evaluate_embedding(combined_data_swow_fT)
+  results_combined_data_swow_bge <- predict_and_evaluate_embedding(combined_data_swow_bge)
+  
+  # arrange results in tibble
+  results <- tibble(
+    word_property = word_property,
+    data = c("SWOW", "fastText", "BGE-M3", "SWOW + fastText", "SWOW + BGE-M3"),
+    rsq = c(
+      results_swow_data$rsq,
+      results_fT_data$rsq,
+      results_bge_data$rsq,
+      results_combined_data_swow_fT$rsq,
+      results_combined_data_swow_bge$rsq
+    ),
+    ci_lower = c(
+      results_swow_data$ci_lower,
+      results_fT_data$ci_lower,
+      results_bge_data$ci_lower,
+      results_combined_data_swow_fT$ci_lower,
+      results_combined_data_swow_bge$ci_lower
+    ),
+    ci_upper = c(
+      results_swow_data$ci_upper,
+      results_fT_data$ci_upper,
+      results_bge_data$ci_upper,
+      results_combined_data_swow_fT$ci_upper,
+      results_combined_data_swow_bge$ci_upper
+    )
+  )
+  
+  rsq_values <- rsq_values %>% 
+    bind_rows(results)
+  
+}
+
+write_csv(rsq_values, "01_Data/Varia/psylin_predictions_l2normalized_bge.csv")
+
+# Plot rsq values for all three prediction bases -------------------------------
+
+rsq_values %>% 
+  left_join(rsq_values %>% 
+              group_by(word_property, data) %>% 
+              summarize(sort_value = mean(rsq)) %>% 
+              filter(data == "SWOW") %>% 
+              select(-data), 
+            by = "word_property") %>% 
+  mutate(property_label = case_when(word_property == "arousal" ~ "Arousal",
+                                    word_property == "valence_lang" ~ "Valence (LANG)",
+                                    word_property == "concreteness" ~ "Concreteness",
+                                    word_property == "valence_angst" ~ "Valence (ANGST)",
+                                    word_property == "imageability" ~ "Imageability",
+                                    word_property == "arousal_anew" ~ "Arousal (ANEW)",
+                                    word_property == "arousal_bawl" ~ "Arousal (BAWL)",
+                                    word_property == "aoa" ~ "Age of Acquisition",
+                                    word_property == "dominance" ~ "Dominance",
+                                    word_property == "potency" ~ "Potency")) %>% 
+  mutate(property_label = fct_reorder(property_label, -sort_value)) %>% 
+  ggplot(aes(x = property_label, y = rsq, group = data, color = data)) +
+  geom_line(linewidth = 1, alpha = 0.5, position = position_dodge(width = 0.2)) +
+  geom_pointrange(aes(ymin = ci_lower, ymax = ci_upper), size = 0.5, position = position_dodge(width = 0.2)) +
+  # geom_point(size = 3) +
+  scale_color_manual(
+    values = c(
+      "SWOW" = "#366A9FFF", 
+      fastText = "grey50", 
+      "BGE-M3" = "violet",
+      "SWOW + fastText" = "#3B2F5EFF",
+      "SWOW + BGE-M3" = "darkviolet"
+    ), 
+    name = "Language Model"
+  ) +
+  coord_cartesian(ylim = c(0, 0.9)) +
+  scale_y_continuous(breaks = seq(0, 0.9, 0.1), minor_breaks = NULL) +
+  labs(y = expression(R^2)) +
+  theme_minimal() +
+  theme(panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        axis.text.x = element_text(angle = 90, hjust = 1),
+        axis.title.x = element_blank(),
+        legend.position = "right",
+        text = element_text(family = "Helvetica"))
+
+ggsave("03_Plots/validation_psylin_l2normalized_bge.png", width = 18, height = 8, 
+       bg = "white", units = "cm", scale = 1.25)
+
+# Extract numbers for the paper ------------------------------------------------
+
+# Models
+rsq_values %>% 
+  summarize(mean(rsq), range(rsq)[1], range(rsq)[2])
+
+rsq_values %>% 
+  group_by(data) %>% 
+  summarize(mean(rsq), range(rsq)[1], range(rsq)[2]) %>% 
+  arrange(`mean(rsq)`)
+
+# Criteria
+rsq_values %>% 
+  group_by(word_property) %>% 
+  summarize(mean(rsq), range(rsq)[1], range(rsq)[2]) %>% 
+  arrange(desc(`mean(rsq)`))
+
+

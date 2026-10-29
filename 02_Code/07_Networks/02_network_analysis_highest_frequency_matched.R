@@ -2,11 +2,10 @@
 
 library(tidyverse)
 library(igraph)
-# library(parallel)
 
-# source("02_Code/07_Networks/Functions/sample_swow_dataset.R")
 source("02_Code/07_Networks/Functions/infer_network.r")
 source("02_Code/07_Networks/Functions/analyze_network.r")
+source("02_Code/07_Networks/Functions/small_world_hg.r")
 
 # Read files -------------------------------------------------------------------
 
@@ -31,6 +30,8 @@ n_responses <- swow_de %>%
 
 # Analyze networks -------------------------------------------------------------
 
+set.seed(1984)
+
 nw_de <- infer_network(swow_combined %>% filter(dataset == "de"))
 nw_metrics_de <- analyze_network(nw_de)
 
@@ -51,7 +52,7 @@ nw_metrics_nl <- analyze_network(nw_nl)
 options(pillar.sigfig = 5)
 results <- bind_rows(nw_metrics_de, nw_metrics_nl, nw_metrics_en, nw_metrics_rp, nw_metrics_zh) %>% 
   mutate(dataset = c("de", "nl", "en", "rp", "zh"), .before = n_nodes) %>% 
-  select(dataset, n_edges, avg_strength, aspl, avg_local_cc)
+  select(dataset, n_edges, avg_strength, aspl, avg_local_cc, S)
 results
 
 # Calculate percentage difference range
@@ -60,7 +61,8 @@ percentages <- results %>%
     perc_n_edges = 1 - (min(n_edges) / max(n_edges)), 
     perc_avg_strength = 1 - (min(avg_strength) / max(avg_strength)),
     perc_aspl = 1 - (min(aspl) / max(aspl)),
-    perc_avg_local_cc = 1 - (min(avg_local_cc) / max(avg_local_cc))
+    perc_avg_local_cc = 1 - (min(avg_local_cc) / max(avg_local_cc)),
+    perc_S = 1 - (min(S) / max(S))
   )
 max(percentages)
 
